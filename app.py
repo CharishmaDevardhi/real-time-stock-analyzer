@@ -12,6 +12,47 @@ from email_report import EmailReportError, format_email_body, send_report, smtp_
 from stock_data import StockDataError, default_period_for_interval, fetch_history, snapshot_from_history
 from tickers import build_choices, infer_ticker_from_free_text
 
+st.markdown("""
+<style>
+
+/* Fix dropdown main box */
+div[data-baseweb="select"] {
+    background-color: #0f172a !important;
+    color: white !important;
+}
+
+/* Dropdown input area */
+div[data-baseweb="select"] > div {
+    background-color: #0f172a !important;
+    color: white !important;
+}
+
+/* Dropdown menu (the popup) */
+ul[role="listbox"] {
+    background-color: #0f172a !important;
+    color: white !important;
+    border-radius: 10px;
+}
+
+/* Each option */
+li[role="option"] {
+    background-color: #0f172a !important;
+    color: white !important;
+}
+
+/* Hover */
+li[role="option"]:hover {
+    background-color: #1e293b !important;
+}
+
+/* Selected */
+li[aria-selected="true"] {
+    background-color: #2563eb !important;
+    color: white !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 st.set_page_config(page_title="Smart Stock Analyzer", layout="wide")
 st.markdown(
@@ -384,12 +425,35 @@ if not fast_latest.empty and not slow_latest.empty:
     slow_val = float(slow_latest.iloc[-1])
     gap_pct = ((fast_val - slow_val) / slow_val * 100.0) if slow_val else 0.0
     direction = "above" if gap_pct >= 0 else "below"
+    # Trend strength based on absolute percentage difference between fast and slow MAs
+    abs_gap = abs(gap_pct)
+    if abs_gap < 1.0:
+        trend_strength_label = "Weak"
+    elif abs_gap <= 3.0:
+        trend_strength_label = "Moderate"
+    else:
+        trend_strength_label = "Strong"
+    # Build a plain-English explanation of the moving average relationship
+    mood = "bullish" if signal.signal.upper() == "BUY" else "bearish"
+    if direction == "above":
+        trend_phrase = "short-term price is moving stronger than the longer-term trend"
+    else:
+        trend_phrase = "short-term price is weaker than the longer-term trend"
+
     explanation_sentence = (
-        f"{signal.signal} signal: the 20-day moving average is {abs(gap_pct):.2f}% {direction} "
-        "the 50-day moving average, indicating the current short-term trend direction."
+        f"The market is showing a {mood} momentum signal: the short-term trend is {abs(gap_pct):.2f}% {direction} "
+        f"the long-term trend, suggesting that the {trend_phrase}."
     )
 else:
     explanation_sentence = signal.explanation
+    trend_strength_label = "Unknown"
+
+st.markdown(
+    f"<div style='margin-top:0.4rem;margin-bottom:0.1rem;font-size:0.95rem;color:#cbd5ff;'>"
+    f"<strong>📊 Trend Strength:</strong> {trend_strength_label}"
+    f"</div>",
+    unsafe_allow_html=True,
+)
 
 st.markdown(f"<div class='glass-card' style='margin-top:0.55rem'>{explanation_sentence}</div>", unsafe_allow_html=True)
 
@@ -414,13 +478,14 @@ send_btn = st.button("Send Report", type="primary", use_container_width=False)
 if send_btn:
     smtp_cfg = smtp_config_from_env_or_secrets(getattr(st, "secrets", None))
     subject = f"Stock report: {selected_ticker} ({signal.signal})"
+    email_explanation = f"📊 Trend Strength: {trend_strength_label}\n{explanation_sentence}"
     body = format_email_body(
         stock_label=selected_label,
         ticker=selected_ticker,
         current_price=snapshot.current_price,
         pct_change=snapshot.pct_change,
         signal=signal.signal,
-        explanation=explanation_sentence,
+        explanation=email_explanation,
     )
 
     if not email.strip():

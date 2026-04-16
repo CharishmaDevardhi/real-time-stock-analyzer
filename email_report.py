@@ -92,13 +92,17 @@ def format_email_body(
     signal: str,
     explanation: str,
 ) -> str:
-    change = f"{pct_change:+.2f}%"
+    change = f"{pct_change:+.2f}"
     return (
-        f"Stock report: {stock_label} ({ticker})\n"
-        f"Current price: {current_price:.2f}\n"
-        f"Change vs previous close: {change}\n"
-        f"Signal: {signal}\n\n"
-        f"Explanation:\n{explanation}\n\n"
-        "This is educational, not financial advice.\n"
+        "📈 STOCK ANALYSIS REPORT\n\n"
+        f"Stock: {stock_label} ({ticker})\n\n"
+        "📊 Market Snapshot\n"
+        f"- Current Price: ₹{current_price:.2f}\n"
+        f"- Change: {change}%\n\n"
+        f"📉 Signal: {signal}\n\n"
+        "🧠 Insight\n"
+        f"{explanation}\n\n"
+        "⚠️ Note\n"
+        "This is for educational purposes only, not financial advice.\n"
     )
 
