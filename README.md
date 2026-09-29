@@ -62,7 +62,7 @@ Trend strength is determined by the percentage difference between the two moving
 The system interprets technical signals into **human-readable insights**, helping users understand:
 
 * Market momentum
-* Risk level
+* Risk level prediction
 * Possible next actions
 
 ---
